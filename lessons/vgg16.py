@@ -95,7 +95,7 @@ class Vgg16():
     self.compile()
 
   def compile(self, lr=0.001):
-    self.model.compile(optimizer=Adam(lr=lr), loss='categorical_corssentropy',
+    self.model.compile(optimizer=Adam(lr=lr), loss='categorical_crossentropy',
                        metrics=['accuracy'])
 
   def finetune(self, batches):
@@ -106,16 +106,16 @@ class Vgg16():
     model.add(Dense(batches.nb_class, activation='softmax'))
     self.compile()
 
-  def fit_data(self, train, labels, val, val_labels, nb_epoch=1,
+  def fit_data(self, train, labels, val, labels_val, nb_epoch=1,
                batch_size=64):
     self.model.fit(train, labels, nb_epoch=nb_epoch,
-                   validation_data=(val, val_labels), batch_size=batch_size)
+                   validation_data=(val, labels_val), batch_size=batch_size)
 
-  def fit(self, batches, val_batches, nb_epoch):
+  def fit(self, batches, batches_val, nb_epoch):
     self.model.fit_generator(batches, samples_per_epoch=batches.nb_sample,
                              nb_epoch=nb_epoch,
-                             validation_data=val_batches,
-                             nb_val_samples=val_batches.nb_sample)
+                             validation_data=batches_val,
+                             nb_val_samples=batches_val.nb_sample)
 
   def test(self, path, batch_size=8):
     test_batches = self.get_batches(path, shuffle=False, batch_size=batch_size,
