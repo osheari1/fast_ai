@@ -2,6 +2,8 @@ import numpy as np
 import tensorflow as tf
 
 import os, json
+import utils
+
 from glob import glob
 from scipy import misc, ndimage
 from scipy.ndimage.interpolation import zoom
@@ -15,6 +17,7 @@ from keras.layers.convolutional import Convolution2D, MaxPooling2D, ZeroPadding2
 from keras.layers.pooling import GlobalAveragePooling2D
 from keras.optimizers import SGD, RMSprop, Adam
 from keras.preprocessing import image
+from keras.callbacks import ModelCheckpoint
 
 vgg_mean = np.array([123.68, 116.779, 103.939],
                     dtype=np.float32).reshape((1,1,3))
@@ -28,7 +31,7 @@ class Vgg16():
 
   def __init__(self):
     self.FILE_PATH = 'http://www.platform.ai/models/'
-    self.WEIGHTS = '/home/riley/Work/fast_ai/data/models/vgg16.h5'
+    self.WEIGHTS = '/home/riley/Work/fast_ai/data/weights/vgg16.h5'
     self.create()
     self.get_classes()
   
@@ -78,10 +81,6 @@ class Vgg16():
     classes = [self.classes[idx] for idx in idxs]
     return np.array(preds), idxs, classes
 
-  def get_batches(self, path, gen=image.ImageDataGenerator(), shuffle=True,
-                  batch_size=8, class_mode='categorical'):
-    return gen.flow_from_directory(path, target_size=(224, 224),
-            class_mode=class_mode, shuffle=shuffle, batch_size=batch_size)
 
   def ft(self, num):
     """ Retrain the last layer of a model with a new last layer of 
@@ -111,14 +110,15 @@ class Vgg16():
     self.model.fit(train, labels, nb_epoch=nb_epoch,
                    validation_data=(val, labels_val), batch_size=batch_size)
 
-  def fit(self, batches, batches_val, nb_epoch):
+  def fit(self, batches, batches_val, nb_epoch, callbacks=[]):
     self.model.fit_generator(batches, samples_per_epoch=batches.nb_sample,
                              nb_epoch=nb_epoch,
                              validation_data=batches_val,
-                             nb_val_samples=batches_val.nb_sample)
+                             nb_val_samples=batches_val.nb_sample,
+                             callbacks=callbacks)
 
   def test(self, path, batch_size=8):
-    test_batches = self.get_batches(path, shuffle=False, batch_size=batch_size,
+    test_batches = utils.get_batches(path, shuffle=False, batch_size=batch_size,
                                     class_mode=None)
     return test_batches, self.model.predict_generator(test_batches,
                                                       test_batches.nb_sample)
