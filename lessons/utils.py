@@ -95,6 +95,11 @@ def plot_imgs(imgs, figsize=(12,6), rows=1, interp=False, titles=None):
       sp.set_title(titles[i], fontsize=18)
     sns.plt.imshow(imgs[i], interpolation=None if interp else 'none')
 
+def plot_conf_matrix(cm, labels):
+  df = pd.DataFrame(cm, columns=labels, index=labels)
+  pl = sns.heatmap(df, annot=True)
+  return pl
+
 def get_batches(path, gen=image.ImageDataGenerator(), shuffle=True,
                 batch_size=8, class_mode='categorical',
                 target_size=(224, 224)):
@@ -106,7 +111,11 @@ def get_imgs(path, target_size=(224, 224)):
                         target_size=target_size)
   return batches
 
-def create_submit(batches, preds, fname='../submissions/submit.csv'):
+
+def create_submit(batches, preds, clip=(0, 1),
+                  fname='../submissions/submit.csv'):
+  preds = preds.clip(*clip)
+  
   id = [x.split('/')[-1].split('.')[-2] for x in batches.filenames]
   df = pd.DataFrame({'id': id, 'label': preds})
   df.to_csv(fname, index=False, header=True)

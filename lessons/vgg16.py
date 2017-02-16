@@ -31,7 +31,7 @@ class Vgg16():
 
   def __init__(self):
     self.FILE_PATH = 'http://www.platform.ai/models/'
-    self.WEIGHTS = '/home/riley/Work/fast_ai/data/weights/vgg16.h5'
+    self.WEIGHTS = '../data/pretrained_weights/vgg16.h5'
     self.create()
     self.get_classes()
   
