@@ -29,6 +29,7 @@ def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):
                   sample set.
       ext - The file type.
   """
+
   if not os.path.exists(os.path.join(path, 'train')):
     print('Train data is missing.')
     return
@@ -49,13 +50,20 @@ def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):
         os.makedirs(os.path.join(path,'train',cl))
       if not os.path.exists(os.path.join(path,'valid',cl)):
         os.makedirs(os.path.join(path,'valid',cl))
+      
+      # If test is not in a dir called test, create and move all test files
+      if not os.path.exists(os.path.join(path, 'test', 'test')):
+        os.makedirs(os.path.join(path, 'test', 'test'))
+        files = glob(os.path.join(path, 'test', '*'+ext))
+        for f in files:
+          shutil.move(f, os.path.join(path, 'test', 'test'))
+
 
       # Move a sample of test files
-      for file in zip( 
-          np.random.choice(glob(os.path.join(path,'test','test','*.'+ext)),
-            size_smpl, replace=False)):
-        shutil.copyfile(file, os.path.join(path,'sample','test','test',
-                                           file.split('/')[-1]))
+      for f in np.random.choice(glob(os.path.join(path,'test','test','*.'+ext)),
+                                size_smpl, replace=False):
+        shutil.copyfile(f, os.path.join(path,'sample','test','test',
+                        f.split('/')[-1]))
 
       # Move files to train / valid
       files = glob(os.path.join(path, 'train', cl+'.*.'+ext))
@@ -64,21 +72,21 @@ def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):
       files_val = np.random.choice(files, size_val, replace=False)
       print('Moving %s: %d to train, %d to valid' % 
           (cl, len(files) - size_val, size_val))
-      for file in files:
-        if file in files_val:
-          shutil.move(file, os.path.join(path, 'valid', cl))
+      for f in files:
+        if f in files_val:
+          shutil.move(f, os.path.join(path, 'valid', cl))
           continue
-        shutil.move(file, os.path.join(path, 'train', cl))
+        shutil.move(f, os.path.join(path, 'train', cl))
       # Copy a small number of training samples to sample train and valid
-      for file_tr, file_val in zip( 
+      for f_tr, f_val in zip( 
           np.random.choice(glob(os.path.join(path, 'train', cl, '*.'+ext)),
                            size_smpl, replace=False),
           np.random.choice(glob(os.path.join(path, 'valid', cl, '*.'+ext)),
                            size_smpl, replace=False)): 
-        shutil.copyfile(file_tr, os.path.join(path, 'sample', 'train',
-                                           cl, file_tr.split('/')[-1]))
-        shutil.copyfile(file_tr, os.path.join(path, 'sample', 'valid',
-                                           cl, file_tr.split('/')[-1]))
+        shutil.copyfile(f_tr, os.path.join(path, 'sample', 'train',
+                                           cl, f_tr.split('/')[-1]))
+        shutil.copyfile(f_val, os.path.join(path, 'sample', 'valid',
+                                           cl, f_val.split('/')[-1]))
 
 def plot_img(img):
   sns.plt.imshow(np.rollaxis(img, 0, 3).astype(np.uint8))

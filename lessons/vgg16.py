@@ -105,16 +105,16 @@ class Vgg16():
     model.add(Dense(batches.nb_class, activation='softmax'))
     self.compile()
 
-  def fit_data(self, train, labels, val, labels_val, nb_epoch=1,
+  def fit_data(self, train, labels, valid, labels_valid, nb_epoch=1,
                batch_size=64):
     self.model.fit(train, labels, nb_epoch=nb_epoch,
-                   validation_data=(val, labels_val), batch_size=batch_size)
+                   validation_data=(valid, labels_valid), batch_size=batch_size)
 
-  def fit(self, batches, batches_val, nb_epoch, callbacks=[]):
+  def fit(self, batches, batches_valid, nb_epoch, callbacks=[]):
     self.model.fit_generator(batches, samples_per_epoch=batches.nb_sample,
                              nb_epoch=nb_epoch,
-                             validation_data=batches_val,
-                             nb_val_samples=batches_val.nb_sample,
+                             validation_data=batches_valid,
+                             nb_val_samples=batches_valid.nb_sample,
                              callbacks=callbacks)
 
   def test(self, path, batch_size=8):
