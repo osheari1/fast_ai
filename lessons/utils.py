@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+import bcolz
 import operator
 import sys
 import os
@@ -13,6 +14,8 @@ import h5py
 from scipy import ndimage
 from PIL import Image
 from glob import glob
+from IPython import display
+
 
 from sklearn import metrics
 from keras.preprocessing import image
@@ -135,17 +138,37 @@ def create_submit(batches, probas, fname, clip=(0, 1)):
   df = pd.DataFrame({'id': id, 'label': probas})
   df.to_csv(fname, index=False, header=True)
 
-def save_array_bcolz(fname, arr):
-  if 'bcolz' not in sys.modules:
-    import bcolz
-  c=bcolz.carray(arr, rootdir=fname, mode='w')
+def get_data_save_array(path, fname, chunk_size=2000, target_size=(224,224)):
+  batches = get_batches(path, shuffle=False, batch_size=1, class_mode=None,
+                        target_size=target_size)
+  
+  chunks_total = batches.nb_sample // chunk_size + 1 \
+                    if batches.nb_sample % chunk_size != 0 \
+                    else batches.nb_sample // chunk_size
+  print('Saving %d chunks' % chunks_total)
+  chunk_i = 1
+  arr = []
+  for i in range(batches.nb_sample):
+    arr.append(batches.next())
+    if (i+1) % chunk_size == 0 or i == batches.nb_sample-1:
+      print('', end='\r')
+      print('['+'='*chunk_i+'>'+' '*(chunks_total-chunk_i)+']'+' %d/%d images'\
+            % (i+1 , batches.nb_sample), end='')
+      if i+1 == chunk_size:
+        c = bcolz.carray(np.concatenate(arr), rootdir=fname, mode='w')
+        c.flush()
+      else:
+        c.append(np.concatenate(arr))
+        c.flush()
+      arr = []
+      chunk_i += 1
+
+def save_array_bcolz(fname, arr, mode='w'):
+  c=bcolz.carray(arr, rootdir=fname, mode=mode)
   c.flush()
 
 def load_array_bcolz(fname):
-  if 'bcolz' not in sys.modules:
-    import bcolz
   return bcolz.open(fname)[:]
-
 
 def save_array_h5(fname, arr):
   with h5py.File(fname, 'w') as hf:
