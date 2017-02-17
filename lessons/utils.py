@@ -2,18 +2,21 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+import operator
+import sys
 import os
 import shutil
 import PIL
 import scipy
+import h5py
 
 from scipy import ndimage
 from PIL import Image
 from glob import glob
 
-
+from sklearn import metrics
 from keras.preprocessing import image
-
+from keras.utils.np_utils import to_categorical
 
 
 def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):
@@ -103,7 +106,11 @@ def plot_imgs(imgs, figsize=(12,6), rows=1, interp=False, titles=None):
       sp.set_title(titles[i], fontsize=18)
     sns.plt.imshow(imgs[i], interpolation=None if interp else 'none')
 
-def plot_conf_matrix(cm, labels):
+def plot_conf_matrix(ytrue, preds, labels):
+  labels_sorted = sorted(labels.items(), key=operator.itemgetter(1))
+  lname = [k for k, v in labels_sorted]
+  lidx = [v for k, v in labels_sorted]
+  cm = metrics.confusion_matrix(ytrue, preds, labels=lidx)
   df = pd.DataFrame(cm, columns=labels, index=labels)
   pl = sns.heatmap(df, annot=True)
   return pl
@@ -114,10 +121,11 @@ def get_batches(path, gen=image.ImageDataGenerator(), shuffle=True,
   return gen.flow_from_directory(path, target_size=target_size,
           class_mode=class_mode, shuffle=shuffle, batch_size=batch_size)
 
-def get_imgs(path, target_size=(224, 224)):
+def get_data(path, target_size=(224, 224)):
   batches = get_batches(path, shuffle=False, batch_size=1, class_mode=None,
                         target_size=target_size)
-  return batches
+  
+  return np.concatenate([batches.next() for i in range(batches.nb_sample)])
 
 
 def create_submit(batches, preds, clip=(0, 1),
@@ -127,5 +135,38 @@ def create_submit(batches, preds, clip=(0, 1),
   id = [x.split('/')[-1].split('.')[-2] for x in batches.filenames]
   df = pd.DataFrame({'id': id, 'label': preds})
   df.to_csv(fname, index=False, header=True)
-  
+
+def save_array_bcolz(fname, arr):
+  if 'bcolz' not in sys.modules:
+    import bcolz
+  c=bcolz.carray(arr, rootdir=fname, mode='w')
+  c.flush()
+
+def load_array_bcolz(fname):
+  if 'bcolz' not in sys.modules:
+    import bcolz
+  return bcolz.open(fname)[:]
+
+
+def save_array_h5(fname, arr):
+  with h5py.File(fname, 'w') as hf:
+    hf.create_dataset(fname.split('/')[-1].split('.')[0],
+                      data=arr)
+
+def load_array_h5(fname):
+  with h5py.File(fname, 'r') as hf:
+    return hf[fname.split('/')[-1].split('.')[0]][:]
+
+def get_classes(path):
+  batches_train = get_batches(path+'train', shuffle=False, batch_size=1)
+  batches_valid = get_batches(path+'valid', shuffle=False, batch_size=1)
+  batches_test = get_batches(path+'test', shuffle=False, batch_size=1)
+  return (batches_train.classes, batches_valid.classes,
+          to_categorical(batches_train.classes), 
+          to_categorical(batches_valid.classes)), \
+         (batches_train.filenames, batches_valid.filenames, 
+          batches_test.filenames)
+
+
+
 

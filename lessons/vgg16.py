@@ -82,7 +82,7 @@ class Vgg16():
     return np.array(preds), idxs, classes
 
 
-  def ft(self, num):
+  def ft(self, num, compile_kwargs):
     """ Retrain the last layer of a model with a new last layer of 
         arbitrary size.
     """
@@ -91,7 +91,7 @@ class Vgg16():
     for layer in model.layers:
       layer.trainable=False
     model.add(Dense(num, activation='softmax'))
-    self.compile()
+    self.compile(**compile_kwargs)
 
   def compile(self, lr=0.001):
     self.model.compile(optimizer=Adam(lr=lr), loss='categorical_crossentropy',
@@ -111,10 +111,10 @@ class Vgg16():
                    validation_data=(valid, labels_valid), batch_size=batch_size)
 
   def fit(self, batches, batches_valid, nb_epoch, callbacks=[]):
-    self.model.fit_generator(batches, samples_per_epoch=batches.nb_sample,
+    self.model.fit_generator(batches, samples_per_epoch=batches.n,
                              nb_epoch=nb_epoch,
                              validation_data=batches_valid,
-                             nb_val_samples=batches_valid.nb_sample,
+                             nb_val_samples=batches_valid.n,
                              callbacks=callbacks)
 
   def test(self, path, batch_size=8):
