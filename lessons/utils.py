@@ -18,11 +18,12 @@ from IPython import display
 
 
 from sklearn import metrics
+from keras import models, layers
 from keras.preprocessing import image
 from keras.utils.np_utils import to_categorical
+from keras.utils.layer_utils import layer_from_config
 
-
-def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):
+def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):# {{{
   """ Creates a better directory structure from Kaggle training data. It is
       assumed the images are named in the following structure 'class.####.ext'
   Args:
@@ -92,12 +93,16 @@ def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):
         shutil.copyfile(f_tr, os.path.join(path, 'sample', 'train',
                                            cl, f_tr.split('/')[-1]))
         shutil.copyfile(f_val, os.path.join(path, 'sample', 'valid',
-                                           cl, f_val.split('/')[-1]))
+                                           cl, f_val.split('/')[-1]))# }}}
 
-def plot_img(img):
-  sns.plt.imshow(np.rollaxis(img, 0, 3).astype(np.uint8))
+def plot_img(img):# {{{
+  """ Plot PIL image
+  """
+  sns.plt.imshow(np.rollaxis(img, 0, 3).astype(np.uint8))# }}}
 
-def plot_imgs(imgs, figsize=(12,6), rows=1, interp=False, titles=None):
+def plot_imgs(imgs, figsize=(12,6), rows=1, interp=False, titles=None):# {{{
+  """ Plot a list of PIL images
+  """
   if type(imgs[0]) is np.ndarray:
     imgs = np.array(imgs).astype(np.uint8)
     if (imgs.shape[-1] != 3):
@@ -107,42 +112,50 @@ def plot_imgs(imgs, figsize=(12,6), rows=1, interp=False, titles=None):
     sp = f.add_subplot(rows, len(imgs) // rows, i+1)
     if titles is not None:
       sp.set_title(titles[i], fontsize=18)
-    sns.plt.imshow(imgs[i], interpolation=None if interp else 'none')
+    sns.plt.imshow(imgs[i], interpolation=None if interp else 'none')# }}}
 
-def plot_conf_matrix(ytrue, preds, labels):
+def plot_conf_matrix(ytrue, preds, labels):# {{{
+  """ Plot confusion matrix
+  """
   labels_sorted = sorted(labels.items(), key=operator.itemgetter(1))
   lname = [k for k, v in labels_sorted]
   lidx = [v for k, v in labels_sorted]
   cm = metrics.confusion_matrix(ytrue, preds, labels=lidx)
   df = pd.DataFrame(cm, columns=labels, index=labels)
   pl = sns.heatmap(df, annot=True)
-  return pl
+  return pl# }}}
 
-def get_batches(path, gen=image.ImageDataGenerator(), shuffle=True,
+def get_batches(path, gen=image.ImageDataGenerator(), shuffle=True,# {{{
                 batch_size=8, class_mode='categorical',
                 target_size=(224, 224)):
   return gen.flow_from_directory(path, target_size=target_size,
-          class_mode=class_mode, shuffle=shuffle, batch_size=batch_size)
+          class_mode=class_mode, shuffle=shuffle, batch_size=batch_size)# }}}
 
-def get_data(path, target_size=(224, 224)):
+def get_data(path, target_size=(224, 224)):# {{{
   batches = get_batches(path, shuffle=False, batch_size=1, class_mode=None,
                         target_size=target_size)
   
-  return np.concatenate([batches.next() for i in range(batches.nb_sample)])
+  return np.concatenate([batches.next() for i in range(batches.nb_sample)])# }}}
 
-
-def create_submit(batches, probas, fname, clip=(0, 1)):
+def create_submit(batches, probas, fname, clip=(0, 1)):# {{{
   probas = probas.clip(*clip)
   
   id = [x.split('/')[-1].split('.')[-2] for x in batches.filenames]
   df = pd.DataFrame({'id': id, 'label': probas})
-  df.to_csv(fname, index=False, header=True)
+  df.to_csv(fname, index=False, header=True)# }}}
 
-def compress_imgs(path, fname, chunk_size=None, target_size=(224,224)):
+def compress_imgs(path, fname, chunk_size=None, target_size=(224,224)):# {{{
   batches = get_batches(path, shuffle=False, batch_size=1, class_mode=None,
                         target_size=target_size)
+
   if not chunk_size:
     chunk_size = batches.nb_sample
+  
+  if chunk_size > batches.nb_sample:
+    chunk_size = batches.nb_sample
+
+  if not os.path.exists(fname):
+    os.makedirs(fname)
 
   chunks_total = batches.nb_sample // chunk_size + 1 \
                     if batches.nb_sample % chunk_size != 0 \
@@ -165,25 +178,25 @@ def compress_imgs(path, fname, chunk_size=None, target_size=(224,224)):
         c.append(np.concatenate(arr))
         c.flush()
       arr = []
-      chunk_i += 1
+      chunk_i += 1# }}}
 
-def save_array_bcolz(fname, arr, mode='w'):
+def save_array_bcolz(fname, arr, mode='w'):# {{{
   c=bcolz.carray(arr, rootdir=fname, mode=mode)
-  c.flush()
+  c.flush()# }}}
 
-def load_array_bcolz(fname):
-  return bcolz.open(fname)[:]
+def load_array_bcolz(fname):# {{{
+  return bcolz.open(fname)[:]# }}}
 
-def save_array_h5(fname, arr):
+def save_array_h5(fname, arr):# {{{
   with h5py.File(fname, 'w') as hf:
     hf.create_dataset(fname.split('/')[-1].split('.')[0],
-                      data=arr)
+                      data=arr)# }}}
 
-def load_array_h5(fname):
+def load_array_h5(fname):# {{{
   with h5py.File(fname, 'r') as hf:
-    return hf[fname.split('/')[-1].split('.')[0]][:]
+    return hf[fname.split('/')[-1].split('.')[0]][:]# }}}
 
-def get_classes(path):
+def get_classes(path):# {{{
   batches_train = get_batches(path+'train', shuffle=False, batch_size=1)
   batches_valid = get_batches(path+'valid', shuffle=False, batch_size=1)
   batches_test = get_batches(path+'test', shuffle=False, batch_size=1)
@@ -191,8 +204,48 @@ def get_classes(path):
           to_categorical(batches_train.classes), 
           to_categorical(batches_valid.classes)), \
          (batches_train.filenames, batches_valid.filenames, 
-          batches_test.filenames)
+          batches_test.filenames)# }}}
 
 
+##### Layer funcs ###### {{{
+def split_at(model, layer_type):
+    layers = model.layers
+    layer_idx = [index for index,layer in enumerate(layers)
+                 if type(layer) is layer_type][-1]
+    return layers[:layer_idx+1], layers[layer_idx+1:]
+
+def wrap_config(layer):
+  return {'class_name': layer.__class__.__name__, 'config': layer.get_config()}
+
+def copy_layer(layer): 
+  return layer_from_config(wrap_config(layer))
+
+def copy_layers(layers, input_shape=None): 
+  return [copy_layer(layer).__class__(input_shape=input_shape) \
+            if i == 0 and input_shape \
+            else copy_layer(layer) 
+            for i, layer in enumerate(layers)]
+
+def copy_weights(from_layers, to_layers):
+  for from_layer,to_layer in zip(from_layers, to_layers):
+    to_layer.set_weights(from_layer.get_weights())
+
+def copy_model(m):
+    m_copy = Sequential(copy_layers(m.layers))
+    copy_weights(m.layers, m_copy.layers)
+    return m_copy
+
+def create_model_from_layers(layers):
+  layers_cpy = copy_layers(layers, input_shape=layers[0].input_shape[1:])
+  model = models.Sequential(layers_cpy)
+  copy_weights(layers, model.layers)
+  return model
+
+def set_dropout(model, value=0):
+  for layer in model.layers:
+    if not type(layer) is layers.Dropout:
+      continue
+    layer.p = value
+# }}}
 
 
