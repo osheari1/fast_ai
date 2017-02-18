@@ -138,10 +138,12 @@ def create_submit(batches, probas, fname, clip=(0, 1)):
   df = pd.DataFrame({'id': id, 'label': probas})
   df.to_csv(fname, index=False, header=True)
 
-def get_data_save_array(path, fname, chunk_size=2000, target_size=(224,224)):
+def compress_imgs(path, fname, chunk_size=None, target_size=(224,224)):
   batches = get_batches(path, shuffle=False, batch_size=1, class_mode=None,
                         target_size=target_size)
-  
+  if not chunk_size:
+    chunk_size = batches.nb_sample
+
   chunks_total = batches.nb_sample // chunk_size + 1 \
                     if batches.nb_sample % chunk_size != 0 \
                     else batches.nb_sample // chunk_size
@@ -153,7 +155,9 @@ def get_data_save_array(path, fname, chunk_size=2000, target_size=(224,224)):
     if (i+1) % chunk_size == 0 or i == batches.nb_sample-1:
       print('', end='\r')
       print('['+'='*chunk_i+'>'+' '*(chunks_total-chunk_i)+']'+' %d/%d images'\
-            % (i+1 , batches.nb_sample), end='')
+            % (i+1 , batches.nb_sample),
+            end='' if i != batches.nb_sample-1 else '\n')
+
       if i+1 == chunk_size:
         c = bcolz.carray(np.concatenate(arr), rootdir=fname, mode='w')
         c.flush()
