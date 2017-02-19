@@ -95,6 +95,19 @@ def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):# {{{
         shutil.copyfile(f_val, os.path.join(path, 'sample', 'valid',
                                            cl, f_val.split('/')[-1]))# }}}
 
+def rm_checkpoints(path_match, epoch_keep):# {{{
+  # Convert numberic input to string
+  if isinstance(epoch_keep, int):
+    epoch_keep = epoch_keep - 1  # Adjust for file name difference
+    if epoch_keep < 10:
+      epoch_keep = '0%d' % epoch_keep
+    else:
+      epoch_keep = str(epoch_keep)
+  
+  for f in glob(path_match+'*'):
+    if not '.%s-'%epoch_keep in f:
+      os.remove(f)# }}}
+
 def plot_img(img):# {{{
   """ Plot PIL image
   """
@@ -144,6 +157,17 @@ def create_submit(batches, probas, fname, clip=(0, 1)):# {{{
   df = pd.DataFrame({'id': id, 'label': probas})
   df.to_csv(fname, index=False, header=True)# }}}
 
+def get_classes(path):# {{{
+  batches_train = get_batches(path+'train', shuffle=False, batch_size=1)
+  batches_valid = get_batches(path+'valid', shuffle=False, batch_size=1)
+  batches_test = get_batches(path+'test', shuffle=False, batch_size=1)
+  return (batches_train.classes, batches_valid.classes,
+          to_categorical(batches_train.classes), 
+          to_categorical(batches_valid.classes)), \
+         (batches_train.filenames, batches_valid.filenames, 
+          batches_test.filenames)# }}}
+
+#### Array funcs ##### {{{
 def compress_imgs(path, fname, chunk_size=None, target_size=(224,224)):# {{{
   batches = get_batches(path, shuffle=False, batch_size=1, class_mode=None,
                         target_size=target_size)
@@ -194,18 +218,7 @@ def save_array_h5(fname, arr):# {{{
 
 def load_array_h5(fname):# {{{
   with h5py.File(fname, 'r') as hf:
-    return hf[fname.split('/')[-1].split('.')[0]][:]# }}}
-
-def get_classes(path):# {{{
-  batches_train = get_batches(path+'train', shuffle=False, batch_size=1)
-  batches_valid = get_batches(path+'valid', shuffle=False, batch_size=1)
-  batches_test = get_batches(path+'test', shuffle=False, batch_size=1)
-  return (batches_train.classes, batches_valid.classes,
-          to_categorical(batches_train.classes), 
-          to_categorical(batches_valid.classes)), \
-         (batches_train.filenames, batches_valid.filenames, 
-          batches_test.filenames)# }}}
-
+    return hf[fname.split('/')[-1].split('.')[0]][:]# }}}# }}}
 
 ##### Layer funcs ###### {{{
 def split_at(model, layer_type):
