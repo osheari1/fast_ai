@@ -125,7 +125,9 @@ def plot_imgs(imgs, figsize=(12,6), rows=1, interp=False, titles=None):# {{{
     sp = f.add_subplot(rows, len(imgs) // rows, i+1)
     if titles is not None:
       sp.set_title(titles[i], fontsize=18)
-    sns.plt.imshow(imgs[i], interpolation=None if interp else 'none')# }}}
+    sp.grid(False)
+    ax = sns.plt.imshow(imgs[i], interpolation=None if interp else 'none')
+    # }}}
 
 def plot_conf_matrix(ytrue, preds, labels):# {{{
   """ Plot confusion matrix
