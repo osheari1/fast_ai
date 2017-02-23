@@ -249,13 +249,13 @@ def insert_layer(model, new_layer, index):
     layer_cpy = copy_layer(layer)
     m_new.add(layer_cpy)
     layer_cpy.set_weights(layer.get_weights())
-    return m_new
+  return m_new
 
-def insert_layers(model, new_layer, idxs):
+def insert_layers(model, new_layer_class, idxs):
   m_new = models.Sequential()
   for i, layer in enumerate(model.layers):
     if i in idxs:
-      m_new.add(new_layer)
+      m_new.add(new_layer_class())
     layer_cpy = copy_layer(layer)
     m_new.add(layer_cpy)
     layer_cpy.set_weights(layer.get_weights())
@@ -266,9 +266,10 @@ def copy_weights(from_layers, to_layers):
     to_layer.set_weights(from_layer.get_weights())
 
 def copy_model(m):
-    m_copy = Sequential(copy_layers(m.layers))
-    copy_weights(m.layers, m_copy.layers)
-    return m_copy
+  layers_cpy = copy_layers(m.layers)
+  m_copy = models.Sequential(layers_cpy)
+  copy_weights(m.layers, m_copy.layers)
+  return m_copy
 
 def create_model_from_layers(layers):
   layers_cpy = copy_layers(layers, input_shape=layers[0].input_shape[1:])
