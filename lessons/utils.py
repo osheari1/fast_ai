@@ -241,6 +241,26 @@ def copy_layers(layers, input_shape=None):
             else copy_layer(layer) 
             for i, layer in enumerate(layers)]
 
+def insert_layer(model, new_layer, index):
+  m_new = models.Sequential()
+  for i, layer in enumerate(model.layers):
+    if i == index:
+      m_new.add(new_layer)
+    layer_cpy = copy_layer(layer)
+    m_new.add(layer_cpy)
+    layer_cpy.set_weights(layer.get_weights())
+    return m_new
+
+def insert_layers(model, new_layer, idxs):
+  m_new = models.Sequential()
+  for i, layer in enumerate(model.layers):
+    if i in idxs:
+      m_new.add(new_layer)
+    layer_cpy = copy_layer(layer)
+    m_new.add(layer_cpy)
+    layer_cpy.set_weights(layer.get_weights())
+  return m_new
+
 def copy_weights(from_layers, to_layers):
   for from_layer,to_layer in zip(from_layers, to_layers):
     to_layer.set_weights(from_layer.get_weights())
@@ -256,11 +276,19 @@ def create_model_from_layers(layers):
   copy_weights(layers, model.layers)
   return model
 
-def set_dropout(model, value=0):
+def set_dropout(model, p_prev=0.5, p_new=0):
+  """Assumes uniform dropout prob"""
   for layer in model.layers:
     if not type(layer) is layers.Dropout:
+      layer.set_weights(adjust_dropout(layer.get_weights(), p_prev, p_new))
       continue
-    layer.p = value
+    layer.p = p_new
+
+def adjust_dropout(weights, p_prev, p_new):
+    scal = (1-p_prev)/(1-p_new)
+    return [w*scal for w in weights]
+
+
 # }}}
 
 
