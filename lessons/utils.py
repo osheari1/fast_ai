@@ -23,6 +23,37 @@ from keras.preprocessing import image
 from keras.utils.np_utils import to_categorical
 from keras.utils.layer_utils import layer_from_config
 
+
+def create_dirs(path, classes, ext='jpg'):
+  if not os.path.exists(os.path.join(path, 'train')):
+    print('Train data is missing.')
+    return
+  if os.path.exists(os.path.join(path, 'sample')) or\
+      os.path.exists(os.path.join(path, 'valid')): 
+    print("Directory structure already exists")
+    return
+
+  for cl in classes:
+      # Create missing directories
+      if not os.path.exists(os.path.join(path,'sample','train',cl)):
+        os.makedirs(os.path.join(path,'sample','train',cl))
+      if not os.path.exists(os.path.join(path,'sample','valid',cl)):
+        os.makedirs(os.path.join(path,'sample','valid',cl))
+      if not os.path.exists(os.path.join(path,'sample','test','test')):
+        os.makedirs(os.path.join(path,'sample','test','test'))
+      if not os.path.exists(os.path.join(path,'train',cl)):
+        os.makedirs(os.path.join(path,'train',cl))
+      if not os.path.exists(os.path.join(path,'valid',cl)):
+        os.makedirs(os.path.join(path,'valid',cl))
+      
+      # If test is not in a dir called test, create and move all test files
+      if not os.path.exists(os.path.join(path, 'test', 'test')):
+        os.makedirs(os.path.join(path, 'test', 'test'))
+        files = glob(os.path.join(path, 'test', '*'+ext))
+        for f in files:
+          shutil.move(f, os.path.join(path, 'test', 'test'))
+
+
 def struct_dir(path, classes, size_val=1000, size_smpl=50, ext='jpg'):# {{{
   """ Creates a better directory structure from Kaggle training data. It is
       assumed the images are named in the following structure 'class.####.ext'
