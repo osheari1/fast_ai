@@ -183,7 +183,7 @@ def get_data(path, target_size=(224, 224)):# {{{
   
   return np.concatenate([batches.next() for i in range(batches.nb_sample)])# }}}
 
-def create_submit(batches, probas, fname, clip=(0, 1)):# {{{
+def create_submit(batches, probas, fname, classes, clip=(0, 1)):# {{{
   probas = probas.clip(*clip)
   
   id = [x.split('/')[-1].split('.')[-2] for x in batches.filenames]
