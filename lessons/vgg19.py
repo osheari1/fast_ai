@@ -29,10 +29,10 @@ def vgg_preprocess(x):
 class Vgg19():
   """ The VGG 19 Imagenet model """
 
-  def __init__(self):
+  def __init__(self, size=(224, 224), include_top=True):
     self.FILE_PATH = 'http://www.platform.ai/models/'
     self.WEIGHTS = '../data/pretrained_weights/vgg19.h5'
-    self.create()
+    self.create(size, include_top)
     self.get_classes()
   
   def get_classes(self):
@@ -50,13 +50,16 @@ class Vgg19():
       model.add(Convolution2D(filters, 3, 3, activation='relu'))
     model.add(MaxPooling2D((2, 2), strides=(2, 2)))
 
-  def FCBlock(self):
+  def FCBlock(self):# {{{
     model = self.model
     model.add(Dense(4096, activation='relu'))
-    # model.add(Dropout(0.5))
+    model.add(BatchNormalization())
+    model.add(Dropout(0.5))# }}}
 
+  def create(self, size, include_top):# {{{
+    if size != (224, 224):
+      include_top=False
 
-  def create(self):
     model = self.model = Sequential()
     model.add(Lambda(vgg_preprocess, input_shape=(224,224,3)))
 
@@ -65,24 +68,29 @@ class Vgg19():
     self.ConvBlock(4, 256)
     self.ConvBlock(4, 512)
     self.ConvBlock(4, 512)
+    
+    if not include_top:
+      fname = '../data/pretrained_weights/vgg19_notop.h5'
+      model.load_weights(fname)
+      return  
+
+
 
     model.add(Flatten())
     self.FCBlock()
     self.FCBlock()
     model.add(Dense(1000, activation='softmax'))
 
-    print("Loading model weights")
-    model.load_weights(self.WEIGHTS)
+    model.load_weights(self.WEIGHTS)# }}}
 
-  def predict(self, imgs, details=False):
+  def predict(self, imgs, details=False):# {{{
     all_preds = self.model.predict(imgs)
     idxs = np.argmax(all_preds, axis=1)
     preds = [all_preds[i, idxs[i]] for i in range(len(idxs))]
     classes = [self.classes[idx] for idx in idxs]
-    return np.array(preds), idxs, classes
+    return np.array(preds), idxs, classes# }}}
 
-
-  def ft(self, num, compile_kwargs={}):
+  def ft(self, num, compile_kwargs={}):# {{{
     """ Retrain the last layer of a model with a new last layer of 
         arbitrary size.
     """
@@ -91,19 +99,19 @@ class Vgg19():
     for layer in model.layers:
       layer.trainable=False
     model.add(Dense(num, activation='softmax'))
-    self.compile(**compile_kwargs)
+    self.compile(**compile_kwargs)# }}}
 
-  def compile(self, lr=0.001):
+  def compile(self, lr=0.001):# {{{
     self.model.compile(optimizer=Adam(lr=lr), loss='categorical_crossentropy',
-                       metrics=['accuracy'])
+                       metrics=['accuracy'])# }}}
 
-  def finetune(self, batches, compile_kwargs={}):
+  def finetune(self, batches, compile_kwargs={}):# {{{
     model = self.model
     model.pop()
     for layer in model.layers:
       layer.trainable=False
     model.add(Dense(batches.nb_class, activation='softmax'))
-    self.compile(**compile_kwargs)
+    self.compile(**compile_kwargs)# }}}
 
   def fit_data(self, train, labels, valid, labels_valid, nb_epoch=1,
                batch_size=64):

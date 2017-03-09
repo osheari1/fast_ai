@@ -142,7 +142,10 @@ def rm_checkpoints(path_match, epoch_keep):# {{{
 def plot_img(img):# {{{
   """ Plot PIL image
   """
-  sns.plt.imshow(np.rollaxis(img, 0, 3).astype(np.uint8))# }}}
+  # sns.plt.imshow(np.rollaxis(img, 0, 3).astype(np.uint8))
+  pl = sns.plt.imshow(img.astype(np.uint8))
+  pl.axes.grid(False)
+  # }}}
 
 def plot_imgs(imgs, figsize=(12,6), rows=1, interp=False, titles=None):# {{{
   """ Plot a list of PIL images

@@ -29,10 +29,10 @@ def vgg_preprocess(x):
 class Vgg16():
   """ The VGG 16 Imagenet model """
 
-  def __init__(self):
+  def __init__(self, load_weights=True, size=(224,224), include_top=True):
     self.FILE_PATH = 'http://www.platform.ai/models/'
     self.WEIGHTS = '../data/pretrained_weights/vgg16.h5'
-    self.create()
+    self.create(load_weights, size, include_top)
     self.get_classes()
   
   def get_classes(self):
@@ -56,23 +56,31 @@ class Vgg16():
     model.add(Dropout(0.5))
 
 
-  def create(self):
+  def create(self, load_weights, size, include_top):
+    if size != (224, 224):
+      include_top=False
+    
     model = self.model = Sequential()
-    model.add(Lambda(vgg_preprocess, input_shape=(224,224,3)))
+    model.add(Lambda(vgg_preprocess, input_shape=size +(3,)))
 
     self.ConvBlock(2, 64)
     self.ConvBlock(2, 128)
     self.ConvBlock(3, 256)
     self.ConvBlock(3, 512)
     self.ConvBlock(3, 512)
+    
+    if not include_top:
+      fname = '../data/pretrained_weights/vgg16_notop.h5'
+      model.load_weights(fname)
+      return
 
     model.add(Flatten())
     self.FCBlock()
     self.FCBlock()
     model.add(Dense(1000, activation='softmax'))
 
-    print("Loading model weights")
-    model.load_weights(self.WEIGHTS)
+    if load_weights: 
+      model.load_weights(self.WEIGHTS)
 
   def predict(self, imgs, details=False):
     all_preds = self.model.predict(imgs)
