@@ -139,11 +139,11 @@ def rm_checkpoints(path_match, epoch_keep):# {{{
     if not '.%s-'%epoch_keep in f:
       os.remove(f)# }}}
 
-def plot_img(img):# {{{
+def plot_img(img, **kwargs):# {{{
   """ Plot PIL image
   """
   # sns.plt.imshow(np.rollaxis(img, 0, 3).astype(np.uint8))
-  pl = sns.plt.imshow(img.astype(np.uint8))
+  pl = sns.plt.imshow(img.astype(np.uint8), **kwargs)
   pl.axes.grid(False)
   # }}}
 
