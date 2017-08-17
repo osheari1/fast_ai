@@ -7,31 +7,24 @@ from __future__ import absolute_import
 
 import warnings
 
-from ..models import Model
-from ..layers import Flatten
-from ..layers import Dense
-from ..layers import Input
-from ..layers import Conv2D
-from ..layers import MaxPooling2D
-from ..layers import GlobalAveragePooling2D
-from ..layers import GlobalMaxPooling2D
-from ..engine.topology import get_source_inputs
-from ..utils import layer_utils
-from ..utils.data_utils import get_file
-from .. import backend as K
-from .imagenet_utils import decode_predictions
-from .imagenet_utils import preprocess_input
-from .imagenet_utils import _obtain_input_shape
+from keras.models import Model
+from keras.layers import Flatten, Dense, Input
+from keras.layers import Convolution2D, AveragePooling2D
+from keras.engine.topology import get_source_inputs
+from keras.utils.layer_utils import convert_all_kernels_in_model
+from keras.utils.data_utils import get_file
+from keras import backend as K
+from keras.applications.imagenet_utils import decode_predictions, preprocess_input, _obtain_input_shape
 
 
 WEIGHTS_PATH = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.1/vgg16_weights_tf_dim_ordering_tf_kernels.h5'
 WEIGHTS_PATH_NO_TOP = 'https://github.com/fchollet/deep-learning-models/releases/download/v0.1/vgg16_weights_tf_dim_ordering_tf_kernels_notop.h5'
 
 
-def VGG16(include_top=True, weights='imagenet',
-          input_tensor=None, input_shape=None,
-          pooling=None,
-          classes=1000):
+def VGG16_Avg(include_top=True, weights='imagenet',
+              input_tensor=None, input_shape=None,
+              pooling=None,
+              classes=1000):
     """Instantiates the VGG16 architecture.
     Optionally loads weights pre-trained
     on ImageNet. Note that when using TensorFlow,
@@ -99,31 +92,31 @@ def VGG16(include_top=True, weights='imagenet',
         else:
             img_input = input_tensor
     # Block 1
-    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(img_input)
-    x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
+    x = Convolution2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1')(img_input)
+    x = Convolution2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2')(x)
     x = AveragePooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
 
     # Block 2
-    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
-    x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
+    x = Convolution2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1')(x)
+    x = Convolution2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2')(x)
     x = AveragePooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
 
     # Block 3
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
-    x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
+    x = Convolution2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1')(x)
+    x = Convolution2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2')(x)
+    x = Convolution2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3')(x)
     x = AveragePooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
 
     # Block 4
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
+    x = Convolution2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1')(x)
+    x = Convolution2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2')(x)
+    x = Convolution2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3')(x)
     x = AveragePooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
 
     # Block 5
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2')(x)
-    x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3')(x)
+    x = Convolution2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1')(x)
+    x = Convolution2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2')(x)
+    x = Convolution2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3')(x)
     x = AveragePooling2D((2, 2), strides=(2, 2), name='block5_pool')(x)
 
     if include_top:
